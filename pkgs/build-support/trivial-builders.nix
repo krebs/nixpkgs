@@ -27,6 +27,97 @@ rec {
   runCommandCC = runCommand' stdenv;
 
 
+  # Take a name and specification and build a derivation out of it
+  # Examples:
+  #   write "name" { "/etc/test" = { text = "hello world"; }; }
+  #
+  #   write "name" { "" = { executable = true; text = "echo hello world"; }; }
+  #
+  #   write "name" { "/bin/test" = { executable = true; text = "echo hello world"; }; }
+  #
+  #   write "name" { "" = { executable = true;
+  #     check = "${pkgs.shellcheck}/bin/shellcheck";
+  #     text = ''
+  #       #!/bin/sh
+  #       echo hello world
+  #     '';
+  #   }; }
+  write = name: specs0:
+  with lib;
+  let
+    env = filevars // { passAsFile = attrNames filevars; };
+
+    files = map write' specs;
+
+    filevars = genAttrs' (filter (hasAttr "var") files)
+                         (spec: nameValuePair spec.var spec.val);
+
+    genAttrs' = names: f: listToAttrs (map f names);
+    getAttrs = names: set:
+      listToAttrs (map (name: nameValuePair name set.${name})
+                       (filter (flip hasAttr set) names));
+
+    specs =
+      mapAttrsToList
+        (path: spec: let
+          known-types = [ "link" "text" ];
+          found-types = attrNames (getAttrs known-types spec);
+          type = assert length found-types == 1; head found-types;
+        in spec // { inherit path type; })
+        specs0;
+
+    writers.link =
+      { path
+      , link
+      }:
+      assert path == "" || types.posix.absolute-pathname.check path;
+      assert types.posix.package.check link;
+      {
+        install = /* sh */ ''
+          ${optionalString (path != "") /* sh */ ''
+            mkdir -p $out${dirOf path}
+          ''}
+          ln -s ${link} $out${path}
+        '';
+      };
+
+    writers.text =
+      { path
+      , check ? null
+      , executable ? false
+      , mode ? if executable then "0755" else "0644"
+      , text
+      }:
+      assert path == "" || types.posix.absolute-pathname.check path;
+      assert types.bool.check executable;
+      assert types.posix.file-mode.check mode;
+      rec {
+        var = "file_${builtins.hashString "sha1" path}";
+        val = text;
+        install = /* sh */ ''
+          ${optionalString (check != null) /* sh */ ''
+            ${check} ''$${var}Path
+          ''}
+          install \
+              -m ${mode} \
+              -D \
+              ''$${var}Path $out${path}
+        '';
+      };
+
+    write' = spec: writers.${spec.type} (removeAttrs spec ["type"]);
+  in
+    # Use a subshell because <nixpkgs/stdenv/generic/setup.sh>'s genericBuild
+    # sources (or evaluates) the buildCommand and we don't want to modify its
+    # shell.  In particular, exitHandler breaks in multiple ways with set -u.
+    runCommand name env /* sh */ ''
+      (
+        set -efu
+        ${concatMapStringsSep "\n" (getAttr "install") files}
+      )
+    '';
+
+
   /* Writes a text file to the nix store.
    * The contents of text is added to the file in the store.
    *
