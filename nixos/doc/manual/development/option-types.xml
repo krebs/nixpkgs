@@ -205,6 +205,63 @@
     </listitem>
    </varlistentry>
   </variablelist>
+
+  <para>
+   POSIX types:
+  </para>
+
+  <variablelist>
+   <varlistentry>
+    <term>
+     <varname>types.posix.absolute-pathname</varname>
+    </term>
+    <listitem>
+     <para>
+       A pathname beginning with a single or more than two
+       <literal>"/"</literal> characters; see also
+       <literal>lib.posix.pathname</literal>.
+       You can check the POSIX.1-2017 manual Chapter 3.2
+     </para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term>
+     <varname>types.posix.file-mode</varname>
+    </term>
+    <listitem>
+     <para>
+       A string containing the file mode bits and some information about the
+       file type of a file. typical values are <literal>"0644"</literal> or
+       <literal>"0755"</literal>
+       You can check the POSIX.1-2017 manual Chapter 3.168
+     </para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term>
+     <varname>types.posix.filename</varname>
+    </term>
+    <listitem>
+     <para>
+       A string used to name a file.
+       Valid Characters are checked according to the
+       <literal>"Portable Filename Character Set"</literal>
+       You can check the POSIX.1-2017 manual Chapter 3.282
+     </para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term>
+     <varname>types.posix.pathname</varname>
+    </term>
+    <listitem>
+     <para>
+       A string that is used to identify a file.
+       You can check the POSIX.1-2017 manual Chapter 3.271
+     </para>
+    </listitem>
+   </varlistentry>
+  </variablelist>
  </section>
 
  <section xml:id="sec-option-types-value">

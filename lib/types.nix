@@ -246,6 +246,43 @@ rec {
       merge = mergeOneOption;
     };
 
+    posix = {
+      # POSIX.1‐2017, 3.2 Absolute Pathname
+      absolute-pathname = mkOptionType {
+        name = "POSIX absolute pathname";
+        check = x: isString x && substring 0 1 x == "/" && posix.pathname.check x;
+        merge = mergeOneOption;
+      };
+
+      # POSIX.1‐2017, 3.168 File Mode
+      file-mode = mkOptionType {
+        name = "file mode";
+        check = x: isString x && builtins.match "[0-7]{4}" x != null;
+        merge = mergeOneOption;
+      };
+
+      # POSIX.1‐2017, 3.282 Portable Filename Character Set
+      filename = mkOptionType {
+        name = "POSIX filename";
+        check = x: isString x && builtins.match "([0-9A-Za-z._])[0-9A-Za-z._-]*" x != null;
+        merge = mergeOneOption;
+      };
+
+      # POSIX.1‐2017, 3.271 Pathname
+      pathname = mkOptionType {
+        name = "POSIX pathname";
+        check = x:
+          let
+            # The filter is used to normalize paths, i.e. to remove duplicated and
+            # trailing slashes.  It also removes leading slashes, thus we have to
+            # check for "/" explicitly below.
+            xs = filter (s: stringLength s > 0) (splitString "/" x);
+          in
+            isString x && (x == "/" || (length xs > 0 && all posix.filename.check xs));
+        merge = mergeOneOption;
+      };
+    };
+
     # drop this in the future:
     list = builtins.trace "`types.list` is deprecated; use `types.listOf` instead" types.listOf;
 
