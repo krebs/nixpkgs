@@ -144,27 +144,12 @@ rec {
     , destination ? ""   # relative path appended to $out eg "/bin/foo"
     , checkPhase ? ""    # syntax checks, e.g. for scripts
     }:
-    runCommand name
-      { inherit text executable;
-        passAsFile = [ "text" ];
-        # Pointless to do this on a remote machine.
-        preferLocalBuild = true;
-        allowSubstitutes = false;
-      }
-      ''
-        n=$out${destination}
-        mkdir -p "$(dirname "$n")"
-
-        if [ -e "$textPath" ]; then
-          mv "$textPath" "$n"
-        else
-          echo -n "$text" > "$n"
-        fi
-
-        ${checkPhase}
-
-        (test -n "$executable" && chmod +x "$n") || true
-      '';
+    write name {
+      ${destination} = {
+        inherit executable text;
+        check = checkPhase;
+      };
+    };
 
 
   /*
